@@ -20,7 +20,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Thailand 2027",
+  title: "Demones Planner",
   description: "Collaborative trip timeline for the Thailand 2027 group trip",
 };
 
