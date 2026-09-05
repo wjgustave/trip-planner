@@ -1,18 +1,41 @@
 "use client";
 
-// Landing screen: one avatar per traveller. Tap yours, then enter your
-// 4-digit PIN — verified server-side before a session is created.
-import { useState } from "react";
+// Landing screen: a tight square mosaic of illustrated portraits. Tiles are
+// greyscale until hovered (colour fills bottom-up) and ripple from the
+// pointer when selected; picking a tile opens the 4-digit PIN card.
+import { MouseEvent, useState } from "react";
 import { useQuery } from "convex/react";
 import { Avatar, Button, Heading, Loader, Text, TextField } from "@vibe/core";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useIdentity } from "./IdentityProvider";
+import "./avatar-grid.css";
+
+// 4x4 grid, 16 cells exactly: three 2x2 quadrants + two 2x1 tiles stacked
+// in the bottom-right quadrant. grid-area: rowStart / colStart / rowEnd / colEnd.
+const TILES: Record<string, { src: string; area: string }> = {
+  wayne: { src: "/avatars/wayne.png", area: "1 / 1 / 3 / 3" },
+  abdi: { src: "/avatars/abdi.png", area: "1 / 3 / 3 / 5" },
+  john: { src: "/avatars/john.png", area: "3 / 1 / 5 / 3" },
+  emmanuel: { src: "/avatars/emmanuel.png", area: "3 / 3 / 4 / 5" },
+  ali: { src: "/avatars/ali.png", area: "4 / 3 / 5 / 5" },
+};
+
+interface Ripple {
+  id: number;
+  travellerId: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
+let rippleSeq = 0;
 
 export default function AvatarPicker() {
   const travellers = useQuery(api.trip.listTravellers);
   const { signIn } = useIdentity();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ripples, setRipples] = useState<Ripple[]>([]);
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,7 +48,31 @@ export default function AvatarPicker() {
     );
   }
 
+  const tiled = travellers.filter((t) => TILES[t.name.toLowerCase()]);
+  const untiled = travellers.filter((t) => !TILES[t.name.toLowerCase()]);
   const selected = travellers.find((t) => t._id === selectedId);
+
+  const selectTile = (travellerId: string, e: MouseEvent<HTMLButtonElement>) => {
+    // Ripple anchored to the pointer: large enough to reach the far corner.
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const size =
+      2 *
+      Math.max(
+        Math.hypot(x, y),
+        Math.hypot(rect.width - x, y),
+        Math.hypot(x, rect.height - y),
+        Math.hypot(rect.width - x, rect.height - y)
+      );
+    const id = ++rippleSeq;
+    setRipples((prev) => [...prev, { id, travellerId, x, y, size }]);
+    setTimeout(() => setRipples((prev) => prev.filter((r) => r.id !== id)), 600);
+
+    setSelectedId(travellerId);
+    setPin("");
+    setError(null);
+  };
 
   const submit = async () => {
     if (!selected || pin.length !== 4) return;
@@ -46,7 +93,7 @@ export default function AvatarPicker() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center flex-1 gap-8 p-8 min-h-screen">
+    <main className="flex flex-col items-center justify-center flex-1 gap-6 p-6 min-h-screen">
       <div className="flex flex-col items-center gap-2 text-center">
         <span
           style={{
@@ -63,34 +110,72 @@ export default function AvatarPicker() {
         </Text>
       </div>
 
-      <div className="flex flex-wrap items-start justify-center gap-6 max-w-xl">
-        {travellers.map((t) => (
-          <button
-            key={t._id}
-            className="flex flex-col items-center gap-2 cursor-pointer bg-transparent border-none"
-            style={{ opacity: selectedId && selectedId !== t._id ? 0.4 : 1 }}
-            disabled={busy}
-            onClick={() => {
-              setSelectedId(t._id);
-              setPin("");
-              setError(null);
-            }}
-          >
-            <Avatar
-              type={t.avatarUrl ? "img" : "text"}
-              src={t.avatarUrl}
-              text={t.initials}
-              backgroundColor={t.avatarColor as never}
-              size="large"
+      <div className="avatar-mosaic" role="group" aria-label="Pick your traveller">
+        {tiled.map((t) => {
+          const tile = TILES[t.name.toLowerCase()];
+          const isSelected = selectedId === t._id;
+          return (
+            <button
+              key={t._id}
+              className={`avatar-tile${isSelected ? " selected" : ""}`}
+              style={{ gridArea: tile.area }}
+              disabled={busy}
               aria-label={`Continue as ${t.name}`}
-              withoutTooltip
-            />
-            <Text type="text2" weight={selectedId === t._id ? "bold" : "normal"}>
-              {t.name}
-            </Text>
-          </button>
-        ))}
+              aria-pressed={isSelected}
+              onClick={(e) => selectTile(t._id, e)}
+            >
+              <img className="avatar-tile-grey" src={tile.src} alt="" />
+              <img className="avatar-tile-color" src={tile.src} alt="" />
+              <span className="avatar-tile-name">{t.name}</span>
+              {ripples
+                .filter((r) => r.travellerId === t._id)
+                .map((r) => (
+                  <span
+                    key={r.id}
+                    className="avatar-ripple"
+                    style={{
+                      width: r.size,
+                      height: r.size,
+                      left: r.x - r.size / 2,
+                      top: r.y - r.size / 2,
+                    }}
+                  />
+                ))}
+            </button>
+          );
+        })}
       </div>
+
+      {/* Travellers added later without a portrait still get a way in. */}
+      {untiled.length > 0 && (
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {untiled.map((t) => (
+            <button
+              key={t._id}
+              className="flex flex-col items-center gap-1 cursor-pointer bg-transparent border-none"
+              disabled={busy}
+              onClick={() => {
+                setSelectedId(t._id);
+                setPin("");
+                setError(null);
+              }}
+            >
+              <Avatar
+                type={t.avatarUrl ? "img" : "text"}
+                src={t.avatarUrl}
+                text={t.initials}
+                backgroundColor={t.avatarColor as never}
+                size="large"
+                aria-label={`Continue as ${t.name}`}
+                withoutTooltip
+              />
+              <Text type="text2" weight={selectedId === t._id ? "bold" : "normal"}>
+                {t.name}
+              </Text>
+            </button>
+          ))}
+        </div>
+      )}
 
       {selected ? (
         <div
@@ -130,7 +215,7 @@ export default function AvatarPicker() {
         </div>
       ) : (
         <Text type="text3" color="secondary">
-          Tap your avatar to sign in with your 4-digit PIN.
+          Tap your portrait to sign in with your 4-digit PIN.
         </Text>
       )}
     </main>
