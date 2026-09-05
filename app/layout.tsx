@@ -4,6 +4,7 @@ import "@vibe/core/tokens";
 import "./globals.css";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import IdentityProvider from "@/components/identity/IdentityProvider";
+import ElevationProvider from "@/components/identity/ElevationProvider";
 
 // Vibe does not bundle fonts: Figtree for UI, Poppins for headings,
 // wired into Vibe's --font-family / --title-font-family tokens in globals.css.
@@ -33,7 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${figtree.variable} ${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <ConvexClientProvider>
-          <IdentityProvider>{children}</IdentityProvider>
+          <IdentityProvider>
+            <ElevationProvider>{children}</ElevationProvider>
+          </IdentityProvider>
         </ConvexClientProvider>
       </body>
     </html>

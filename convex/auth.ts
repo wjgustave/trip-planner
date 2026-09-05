@@ -3,6 +3,8 @@
 // state) lives server-side in the sessions table, so mutations can trust it.
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { verifyPin } from "./lib/pin";
+import { ELEVATION_MS, requireSession } from "./permissions";
 
 function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -45,6 +47,37 @@ export const getSession = query({
       elevatedUntil: session.elevatedUntil ?? null,
       isElevated: (session.elevatedUntil ?? 0) > Date.now(),
     };
+  },
+});
+
+/**
+ * PIN elevation, verified SERVER-SIDE against the stored hash. On success the
+ * session is elevated for 30 minutes; admin+ mutations check this window.
+ */
+export const elevate = mutation({
+  args: { token: v.string(), pin: v.string() },
+  handler: async (ctx, { token, pin }) => {
+    const { session, traveller } = await requireSession(ctx, token);
+    if (traveller.role === "contributor") {
+      throw new Error("Contributors have no admin actions to unlock");
+    }
+    if (!traveller.pinHash) {
+      throw new Error("No PIN set for this traveller — ask the Super Admin");
+    }
+    const ok = await verifyPin(pin, traveller.pinHash);
+    if (!ok) throw new Error("Wrong PIN");
+    const elevatedUntil = Date.now() + ELEVATION_MS;
+    await ctx.db.patch(session._id, { elevatedUntil });
+    return elevatedUntil;
+  },
+});
+
+/** Manually drop elevation (also expires automatically). */
+export const dropElevation = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const { session } = await requireSession(ctx, token);
+    await ctx.db.patch(session._id, { elevatedUntil: undefined });
   },
 });
 
