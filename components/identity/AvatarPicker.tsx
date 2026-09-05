@@ -50,9 +50,7 @@ export default function AvatarPicker() {
       <div className="flex flex-col items-center gap-2 text-center">
         <span
           style={{
-            fontFamily: "var(--title-font-family)",
-            fontSize: "clamp(56px, 9vw, 104px)",
-            lineHeight: 1.05,
+            font: "var(--font-h2)",
             fontWeight: 700,
             color: "var(--disabled-text-color)",
           }}
