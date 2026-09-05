@@ -1,0 +1,64 @@
+/*
+ * Timeline visual treatment. Layout (grid templates, spans) is inline style
+ * driven by timelineMath; this file holds the decorative layers.
+ * Colours come exclusively from Vibe tokens.
+ */
+
+.timeline-day-col {
+  border-right: var(--border-width) var(--border-style) var(--layout-border-color);
+}
+
+/* Subtle grey wash on Saturday/Sunday columns. */
+.timeline-day-weekend {
+  background: var(--allgrey-background-color);
+}
+
+/* Buffer days: hatched + desaturated so they read as "available but not planned". */
+.timeline-day-buffer {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0,
+    transparent 5px,
+    var(--ui-background-color) 5px,
+    var(--ui-background-color) 7px
+  );
+}
+
+.timeline-day-buffer.timeline-day-weekend {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent 5px,
+      var(--ui-background-color) 5px,
+      var(--ui-background-color) 7px
+    ),
+    var(--allgrey-background-color);
+}
+
+/* Muted date labels over buffer days. */
+.timeline-header-buffer {
+  color: var(--disabled-text-color);
+}
+
+/* Vertical "today" line. */
+.timeline-today-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--negative-color);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.timeline-today-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: 50%;
+  background: var(--negative-color);
+}
