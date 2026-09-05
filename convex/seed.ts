@@ -2,7 +2,7 @@ import { internalMutation } from "./_generated/server";
 import { hashPin } from "./lib/pin";
 
 /**
- * Seeds the Thailand 2027 trip: settings, destinations, 7 traveller slots
+ * Seeds the Thailand 2027 trip: settings, destinations, the traveller roster
  * (Wayne = Super Admin) and the pinned Songkran vibe note on Bangkok.
  * Idempotent — refuses to run if travellers already exist.
  *
@@ -83,8 +83,8 @@ export const run = internalMutation(
       destinationIds[dest.name] = id;
     }
 
-    // --- Seven traveller slots. Wayne is Super Admin; the other six are
-    // placeholders to be renamed in the app. Each gets a distinct Vibe colour.
+    // --- The roster. Wayne is Super Admin; the Super Admin can add more
+    // travellers from the People view. Each gets a distinct Vibe colour.
     const superAdminPinHash = await hashPin(superAdminPin);
     const wayneId = await ctx.db.insert("travellers", {
       name: "Wayne",
@@ -95,19 +95,17 @@ export const run = internalMutation(
       order: 0,
     });
 
-    const placeholderColors = [
-      "done-green",
-      "purple",
-      "working_orange",
-      "sunset",
-      "aquamarine",
-      "berry",
+    const roster: Array<{ name: string; color: string }> = [
+      { name: "Abdi", color: "done-green" },
+      { name: "John", color: "purple" },
+      { name: "Emmanuel", color: "working_orange" },
+      { name: "Ali", color: "sunset" },
     ];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < roster.length; i++) {
       await ctx.db.insert("travellers", {
-        name: `Traveller ${i + 2}`,
-        initials: `T${i + 2}`,
-        avatarColor: placeholderColors[i],
+        name: roster[i].name,
+        initials: roster[i].name[0].toUpperCase(),
+        avatarColor: roster[i].color,
         role: "contributor",
         order: i + 1,
       });
@@ -123,6 +121,62 @@ export const run = internalMutation(
       createdAt: Date.now(),
     });
 
-    return "Seeded: settings, 6 destinations, 7 travellers, Songkran vibe.";
+    return "Seeded: settings, 6 destinations, 5 travellers, Songkran vibe.";
   }
 );
+
+/**
+ * One-off migration: rename placeholder Travellers 2–5 to Abdi, John,
+ * Emmanuel and Ali, and delete any remaining placeholder slots.
+ *
+ * Run with: npx convex run seed:migrateRoster
+ */
+export const migrateRoster = internalMutation(async (ctx) => {
+  const renames: Record<string, string> = {
+    "Traveller 2": "Abdi",
+    "Traveller 3": "John",
+    "Traveller 4": "Emmanuel",
+    "Traveller 5": "Ali",
+  };
+  const travellers = await ctx.db.query("travellers").collect();
+  const done: string[] = [];
+  for (const t of travellers) {
+    const newName = renames[t.name];
+    if (newName) {
+      await ctx.db.patch(t._id, {
+        name: newName,
+        initials: newName[0].toUpperCase(),
+      });
+      done.push(`${t.name} -> ${newName}`);
+    } else if (/^Traveller \d+$/.test(t.name)) {
+      // Leftover placeholder — remove it and anything it owns.
+      const segments = await ctx.db
+        .query("travelSegments")
+        .withIndex("by_traveller", (q) => q.eq("travellerId", t._id))
+        .collect();
+      for (const s of segments) await ctx.db.delete(s._id);
+      const presence = await ctx.db
+        .query("presence")
+        .withIndex("by_traveller", (q) => q.eq("travellerId", t._id))
+        .collect();
+      for (const p of presence) await ctx.db.delete(p._id);
+      const sessions = await ctx.db.query("sessions").collect();
+      for (const s of sessions) {
+        if (s.travellerId === t._id) await ctx.db.delete(s._id);
+      }
+      const vibes = await ctx.db.query("vibes").collect();
+      for (const vibe of vibes) {
+        if (vibe.authorId === t._id) {
+          await ctx.db.delete(vibe._id);
+        } else if (vibe.reactions?.some((r) => r.travellerId === t._id)) {
+          await ctx.db.patch(vibe._id, {
+            reactions: vibe.reactions.filter((r) => r.travellerId !== t._id),
+          });
+        }
+      }
+      await ctx.db.delete(t._id);
+      done.push(`deleted ${t.name}`);
+    }
+  }
+  return done.length ? done.join(", ") : "Nothing to migrate.";
+});

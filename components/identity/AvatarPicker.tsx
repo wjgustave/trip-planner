@@ -1,6 +1,6 @@
 "use client";
 
-// Landing screen: seven avatars, tap yours.
+// Landing screen: one avatar per traveller, tap yours.
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { Avatar, Heading, Loader, Text } from "@vibe/core";

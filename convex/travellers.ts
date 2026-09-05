@@ -51,6 +51,101 @@ export const updateProfile = mutation({
   },
 });
 
+/** Colours handed to new travellers, first unused one wins. */
+const ROSTER_COLORS = [
+  "done-green",
+  "purple",
+  "working_orange",
+  "sunset",
+  "aquamarine",
+  "berry",
+  "bright-blue",
+  "egg_yolk",
+  "peach",
+  "winter",
+];
+
+/** Add a traveller slot to the roster (Super Admin, PIN). */
+export const addTraveller = mutation({
+  args: {
+    sessionToken: v.string(),
+    name: v.string(),
+  },
+  handler: async (ctx, { sessionToken, name }) => {
+    const { traveller } = await requireAction(ctx, sessionToken, "manageTravellers");
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("Traveller needs a name");
+
+    const existing = await ctx.db.query("travellers").collect();
+    const usedColors = new Set(existing.map((t) => t.avatarColor));
+    const avatarColor =
+      ROSTER_COLORS.find((c) => !usedColors.has(c)) ??
+      ROSTER_COLORS[existing.length % ROSTER_COLORS.length];
+    const order = existing.reduce((max, t) => Math.max(max, t.order), -1) + 1;
+
+    const id = await ctx.db.insert("travellers", {
+      name: trimmed,
+      initials: deriveInitials(trimmed),
+      avatarColor,
+      role: "contributor",
+      order,
+    });
+    await logActivity(ctx, traveller, "added traveller", "traveller", id, undefined, {
+      name: trimmed,
+    });
+    return id;
+  },
+});
+
+/** Remove a traveller and everything they own (Super Admin, PIN). */
+export const removeTraveller = mutation({
+  args: {
+    sessionToken: v.string(),
+    travellerId: v.id("travellers"),
+  },
+  handler: async (ctx, { sessionToken, travellerId }) => {
+    const { traveller } = await requireAction(ctx, sessionToken, "manageTravellers");
+    const target = await ctx.db.get(travellerId);
+    if (!target) throw new Error("Traveller not found");
+    if (target._id === traveller._id) throw new Error("You can't remove yourself");
+    if (target.role === "superAdmin") throw new Error("The Super Admin can't be removed");
+
+    // Cascade: flights, presence overrides, sessions, vibes + reactions.
+    const segments = await ctx.db
+      .query("travelSegments")
+      .withIndex("by_traveller", (q) => q.eq("travellerId", travellerId))
+      .collect();
+    for (const s of segments) await ctx.db.delete(s._id);
+
+    const presence = await ctx.db
+      .query("presence")
+      .withIndex("by_traveller", (q) => q.eq("travellerId", travellerId))
+      .collect();
+    for (const p of presence) await ctx.db.delete(p._id);
+
+    const sessions = await ctx.db.query("sessions").collect();
+    for (const s of sessions) {
+      if (s.travellerId === travellerId) await ctx.db.delete(s._id);
+    }
+
+    const vibes = await ctx.db.query("vibes").collect();
+    for (const vibe of vibes) {
+      if (vibe.authorId === travellerId) {
+        await ctx.db.delete(vibe._id);
+      } else if (vibe.reactions?.some((r) => r.travellerId === travellerId)) {
+        await ctx.db.patch(vibe._id, {
+          reactions: vibe.reactions.filter((r) => r.travellerId !== travellerId),
+        });
+      }
+    }
+
+    await ctx.db.delete(travellerId);
+    await logActivity(ctx, traveller, "removed traveller", "traveller", travellerId, {
+      name: target.name,
+    });
+  },
+});
+
 /** Assign a role and optionally (re)set a PIN (Super Admin, PIN). */
 export const setRole = mutation({
   args: {

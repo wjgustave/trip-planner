@@ -31,6 +31,7 @@ export default function PeopleView() {
   }
 
   const isAdmin = me.role !== "contributor";
+  const isSuperAdmin = me.role === "superAdmin";
 
   return (
     <div className="flex-1 overflow-auto p-4 md:p-6">
@@ -45,6 +46,7 @@ export default function PeopleView() {
               isMe={isMe}
               canEditFlights={canEditFlights}
               needsElevation={!isMe && isAdmin}
+              canRemove={isSuperAdmin && !isMe && t.role !== "superAdmin"}
               sessionToken={sessionToken}
               segments={segments.filter((s) => s.travellerId === t._id)}
               presence={presence.filter((p) => p.travellerId === t._id)}
@@ -53,8 +55,69 @@ export default function PeopleView() {
             />
           );
         })}
+        {isSuperAdmin && (
+          <AddTravellerCard sessionToken={sessionToken} ensureElevated={ensureElevated} />
+        )}
       </div>
     </div>
+  );
+}
+
+// Super Admin only: add a new traveller slot to the roster.
+function AddTravellerCard({
+  sessionToken,
+  ensureElevated,
+}: {
+  sessionToken: string;
+  ensureElevated: () => Promise<boolean>;
+}) {
+  const addTraveller = useMutation(api.travellers.addTraveller);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const add = async () => {
+    const trimmed = name.trim();
+    if (!trimmed || busy) return;
+    if (!(await ensureElevated())) return;
+    setBusy(true);
+    try {
+      await addTraveller({ sessionToken, name: trimmed });
+      setName("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section
+      className="flex flex-col gap-3 p-4 justify-center"
+      style={{
+        background: "var(--primary-background-color)",
+        border: "var(--border-width) dashed var(--layout-border-color)",
+        borderRadius: "var(--border-radius-medium)",
+      }}
+    >
+      <Text type="text1" weight="bold">
+        Add a traveller
+      </Text>
+      <Text type="text3" color="secondary">
+        New travellers join as Contributors — promote them from their card later.
+      </Text>
+      <div className="flex gap-2 items-center">
+        <TextField
+          size="small"
+          placeholder="Name"
+          value={name}
+          onChange={setName}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void add();
+          }}
+        />
+        <Button size="small" disabled={!name.trim() || busy} onClick={() => void add()}>
+          Add
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -70,6 +133,7 @@ interface CardProps {
   isMe: boolean;
   canEditFlights: boolean;
   needsElevation: boolean;
+  canRemove: boolean;
   sessionToken: string;
   segments: ReturnType<typeof Object>[] & object[];
   presence: { destinationId: string; startDate: string; endDate: string; isOverride: boolean }[];
@@ -82,6 +146,7 @@ function TravellerCard({
   isMe,
   canEditFlights,
   needsElevation,
+  canRemove,
   sessionToken,
   segments,
   presence,
@@ -89,8 +154,17 @@ function TravellerCard({
   ensureElevated,
 }: CardProps) {
   const updateProfile = useMutation(api.travellers.updateProfile);
+  const removeTraveller = useMutation(api.travellers.removeTraveller);
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(traveller.name);
+
+  const remove = async () => {
+    if (!window.confirm(`Remove ${traveller.name} from the trip? Their flights and notes go too.`)) {
+      return;
+    }
+    if (!(await ensureElevated())) return;
+    await removeTraveller({ sessionToken, travellerId: traveller._id as Id<"travellers"> });
+  };
 
   const inbound = segments.find((s) => (s as { direction: string }).direction === "inbound");
   const outbound = segments.find((s) => (s as { direction: string }).direction === "outbound");
@@ -206,6 +280,14 @@ function TravellerCard({
         </div>
         {isMe && <PresenceOverrideEditor sessionToken={sessionToken} destinations={places} presence={presence} />}
       </div>
+
+      {canRemove && (
+        <div className="flex justify-end">
+          <Button size="xs" kind="tertiary" color="negative" onClick={() => void remove()}>
+            Remove from trip
+          </Button>
+        </div>
+      )}
     </section>
   );
 }
