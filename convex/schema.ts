@@ -91,6 +91,7 @@ export default defineSchema({
     travellerId: v.id("travellers"),
     elevatedUntil: v.optional(v.number()), // ms epoch; elevation expires after 30 min
     createdAt: v.number(),
+    lastSeenAt: v.optional(v.number()), // heartbeat for "who's online" presence
   }).index("by_token", ["token"]),
 
   // Singleton trip settings. Core dates + buffer are Super Admin editable.

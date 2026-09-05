@@ -7,20 +7,18 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import {
   Avatar,
+  AvatarGroup,
   Heading,
   IconButton,
   Label,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuTitle,
   Text,
   Toast,
 } from "@vibe/core";
-import { Activity, Download, Link as LinkIcon, Person, Print } from "@vibe/icons";
+import { Activity, Download, Link as LinkIcon, Menu as MenuIcon, Person, Print } from "@vibe/icons";
 import { api } from "@/convex/_generated/api";
 import { buildIcs, downloadIcs } from "@/lib/ics";
 import ActivityDrawer from "./ActivityDrawer";
+import HeaderPopover from "./HeaderPopover";
 import { useIdentity } from "./identity/IdentityProvider";
 
 export default function AppHeader() {
@@ -73,6 +71,7 @@ export default function AppHeader() {
         9 April – 2 May 2027
       </Text>
       <div className="ml-auto flex items-center gap-2">
+        <OnlineNow selfId={traveller?._id} />
         {isElevated && <Label text="Elevated" color="positive" kind="line" />}
         <IconButton
           icon={LinkIcon}
@@ -91,39 +90,47 @@ export default function AppHeader() {
           onClick={() => setActivityOpen(true)}
         />
         {traveller?.role === "superAdmin" && (
-          <MenuButton size="small" aria-label="Export" dialogPosition="bottom-end">
-            <Menu>
-              <MenuTitle caption="Export" />
-              <MenuItem icon={Download} title="Download .ics calendar" onClick={exportIcs} />
-              <MenuItem
-                icon={Print}
-                title="Printable summary"
-                onClick={() => window.open("/print", "_blank")}
-              />
-            </Menu>
-          </MenuButton>
-        )}
-        {traveller && (
-          <MenuButton
-            component={() => (
-              <Avatar
-                type={traveller.avatarUrl ? "img" : "text"}
-                src={traveller.avatarUrl}
-                text={traveller.initials}
-                backgroundColor={traveller.avatarColor as never}
+          <HeaderPopover
+            caption="Export"
+            actions={[
+              { icon: Download, label: "Download .ics calendar", onClick: exportIcs },
+              { icon: Print, label: "Printable summary", onClick: () => window.open("/print", "_blank") },
+            ]}
+            trigger={(toggle) => (
+              <IconButton
+                icon={MenuIcon}
                 size="small"
-                aria-label={`Signed in as ${traveller.name}`}
-                withoutTooltip
+                kind="tertiary"
+                aria-label="Export"
+                onClick={toggle}
               />
             )}
-            aria-label="Account menu"
-            dialogPosition="bottom-end"
-          >
-            <Menu>
-              <MenuTitle caption={`${traveller.name} · ${roleLabel(traveller.role)}`} />
-              <MenuItem icon={Person} title="Not you? Switch traveller" onClick={() => void signOut()} />
-            </Menu>
-          </MenuButton>
+          />
+        )}
+        {traveller && (
+          <HeaderPopover
+            caption={`${traveller.name} · ${roleLabel(traveller.role)}`}
+            actions={[
+              { icon: Person, label: "Not you? Switch traveller", onClick: () => void signOut() },
+            ]}
+            trigger={(toggle) => (
+              <button
+                className="cursor-pointer border-none bg-transparent p-0 flex"
+                aria-label="Account menu"
+                onClick={toggle}
+              >
+                <Avatar
+                  type={traveller.avatarUrl ? "img" : "text"}
+                  src={traveller.avatarUrl}
+                  text={traveller.initials}
+                  backgroundColor={traveller.avatarColor as never}
+                  size="small"
+                  aria-label={`Signed in as ${traveller.name}`}
+                  withoutTooltip
+                />
+              </button>
+            )}
+          />
         )}
       </div>
       <ActivityDrawer open={activityOpen} onClose={() => setActivityOpen(false)} />
@@ -133,6 +140,34 @@ export default function AppHeader() {
         </Toast>
       )}
     </header>
+  );
+}
+
+/**
+ * Word-style presence: avatars of everyone else with a live session
+ * (heartbeat in the last 2 minutes), updating in realtime.
+ */
+function OnlineNow({ selfId }: { selfId?: string }) {
+  const online = useQuery(api.auth.whosOnline);
+  const others = (online ?? []).filter((t) => t._id !== selfId);
+  if (others.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1" aria-label={`${others.length} online`}>
+      <AvatarGroup size="small" max={4}>
+        {others.map((t) => (
+          <Avatar
+            key={t._id}
+            type={t.avatarUrl ? "img" : "text"}
+            src={t.avatarUrl}
+            text={t.initials}
+            backgroundColor={t.avatarColor as never}
+            aria-label={`${t.name} is online`}
+            tooltipProps={{ content: `${t.name} — online now` }}
+          />
+        ))}
+      </AvatarGroup>
+    </div>
   );
 }
 

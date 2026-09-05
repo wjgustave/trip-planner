@@ -68,6 +68,24 @@ export default function IdentityProvider({ children }: { children: ReactNode }) 
   const session = useQuery(api.auth.getSession, mounted ? { token } : "skip");
   const createSession = useMutation(api.auth.createSession);
   const endSession = useMutation(api.auth.endSession);
+  const heartbeat = useMutation(api.auth.heartbeat);
+
+  // Presence heartbeat: ping while signed in so others see us online
+  // (and our writes age their stale entries out). Also on tab refocus.
+  useEffect(() => {
+    if (!token) return;
+    const beat = () => void heartbeat({ token }).catch(() => {});
+    beat();
+    const interval = setInterval(beat, 45_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") beat();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [token, heartbeat]);
 
   const signIn = useCallback(
     async (travellerId: Id<"travellers">, pin: string) => {

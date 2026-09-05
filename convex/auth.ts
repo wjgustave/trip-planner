@@ -33,6 +33,7 @@ export const createSession = mutation({
       token,
       travellerId,
       createdAt: Date.now(),
+      lastSeenAt: Date.now(),
       elevatedUntil:
         traveller.role === "contributor" ? undefined : Date.now() + ELEVATION_MS,
     });
@@ -81,6 +82,38 @@ export const elevate = mutation({
     await ctx.db.patch(session._id, { elevatedUntil });
     return elevatedUntil;
   },
+});
+
+/** How long after the last heartbeat someone still counts as online. */
+const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+
+/**
+ * Presence heartbeat — the client pings this every ~45s while the tab is
+ * open. Each write also makes the whosOnline query recompute everywhere,
+ * which is how stale entries age out reactively.
+ */
+export const heartbeat = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("token", token))
+      .unique();
+    if (session) await ctx.db.patch(session._id, { lastSeenAt: Date.now() });
+  },
+});
+
+/** Travellers with a live session (heartbeat in the last 2 minutes). */
+export const whosOnline = query(async (ctx) => {
+  const cutoff = Date.now() - ONLINE_WINDOW_MS;
+  const sessions = await ctx.db.query("sessions").collect();
+  const onlineIds = new Set(
+    sessions.filter((s) => (s.lastSeenAt ?? 0) > cutoff).map((s) => s.travellerId)
+  );
+  const travellers = await ctx.db.query("travellers").withIndex("by_order").collect();
+  return travellers
+    .filter((t) => onlineIds.has(t._id))
+    .map(({ pinHash: _pinHash, ...t }) => t);
 });
 
 /** Manually drop elevation (also expires automatically). */
