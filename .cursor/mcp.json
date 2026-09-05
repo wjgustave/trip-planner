@@ -1,0 +1,9 @@
+json
+{
+  "mcpServers": {
+    "vibe": {
+      "command": "npx",
+      "args": ["-y", "@vibe/mcp"]
+    }
+  }
+}

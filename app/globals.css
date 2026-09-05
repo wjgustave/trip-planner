@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Vibe components require border-box globally or spacing is subtly wrong. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Point Vibe's font tokens at the next/font-loaded families. */
+  --font-family: var(--font-figtree), Roboto, sans-serif;
+  --title-font-family: var(--font-poppins), Roboto, sans-serif;
+
+  /*
+   * Destination colour tokens (brief §2), each referencing a Vibe palette token.
+   * The hexes in the brief map exactly onto Vibe's palette:
+   *   transit    #579BFC -> --color-bright-blue
+   *   bangkok    #A25DDC -> --color-purple
+   *   samui      #00C875 -> --color-done-green
+   *   phangan    #FDAB3D -> --color-working_orange
+   *   phuket     #FF7575 -> --color-sunset
+   *   transit-out#C4C4C4 -> --color-explosive
+   */
+  --dest-transit: var(--color-bright-blue);
+  --dest-bangkok: var(--color-purple);
+  --dest-samui: var(--color-done-green);
+  --dest-phangan: var(--color-working_orange);
+  --dest-phuket: var(--color-sunset);
+  --dest-transit-out: var(--color-explosive);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--allgrey-background-color);
+  color: var(--primary-text-color);
+  font: var(--font-paragraph);
+  -webkit-font-smoothing: var(--font-smoothing-webkit);
+  -moz-osx-font-smoothing: var(--font-smoothing-moz);
+}
