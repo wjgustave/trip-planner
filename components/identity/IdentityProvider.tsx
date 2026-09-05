@@ -43,7 +43,7 @@ interface IdentityContextValue {
   sessionToken: string | undefined;
   isElevated: boolean;
   elevatedUntil: number | null;
-  signIn: (travellerId: Id<"travellers">) => Promise<void>;
+  signIn: (travellerId: Id<"travellers">, pin: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -70,8 +70,8 @@ export default function IdentityProvider({ children }: { children: ReactNode }) 
   const endSession = useMutation(api.auth.endSession);
 
   const signIn = useCallback(
-    async (travellerId: Id<"travellers">) => {
-      const newToken = await createSession({ travellerId });
+    async (travellerId: Id<"travellers">, pin: string) => {
+      const newToken = await createSession({ travellerId, pin });
       document.cookie = `${COOKIE}=${newToken}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`;
       setToken(newToken);
     },

@@ -1,4 +1,4 @@
-// Flight segment mutations. Everyone edits their own; Admin+ edits anyone's.
+// Flight segment mutations. Everyone edits their own; Super Admin edits anyone's.
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { logActivity, requireAction } from "./permissions";
@@ -18,7 +18,7 @@ const segmentFields = {
 export const upsert = mutation({
   args: { sessionToken: v.string(), ...segmentFields },
   handler: async (ctx, { sessionToken, ...fields }) => {
-    // Own flights need contributor; anyone else's needs admin + PIN.
+    // Own flights need contributor; anyone else's needs Super Admin + PIN.
     const { traveller } = await requireAction(ctx, sessionToken, "editOwnFlights");
     if (fields.travellerId !== traveller._id) {
       await requireAction(ctx, sessionToken, "editAnyFlights");

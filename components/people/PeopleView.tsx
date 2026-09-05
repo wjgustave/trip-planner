@@ -38,14 +38,15 @@ export default function PeopleView() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 max-w-7xl mx-auto">
         {travellers.map((t) => {
           const isMe = t._id === me._id;
-          const canEditFlights = isMe || isAdmin;
+          // Editing someone else's flights is Super Admin only.
+          const canEditFlights = isMe || isSuperAdmin;
           return (
             <TravellerCard
               key={t._id}
               traveller={t}
               isMe={isMe}
               canEditFlights={canEditFlights}
-              needsElevation={!isMe && isAdmin}
+              needsElevation={!isMe && isSuperAdmin}
               canRemove={isSuperAdmin && !isMe && t.role !== "superAdmin"}
               sessionToken={sessionToken}
               segments={segments.filter((s) => s.travellerId === t._id)}

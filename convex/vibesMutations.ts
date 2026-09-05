@@ -40,7 +40,7 @@ export const remove = mutation({
     const vibe = await ctx.db.get(vibeId);
     if (!vibe) return;
     if (vibe.authorId !== traveller._id) {
-      await requireAction(ctx, sessionToken, "moderateVibes");
+      await requireAction(ctx, sessionToken, "deleteAnyVibe");
     }
     await ctx.db.delete(vibeId);
     await logActivity(ctx, traveller, "deleted vibe", "vibe", vibeId, { body: vibe.body });
@@ -50,7 +50,7 @@ export const remove = mutation({
 export const setPinned = mutation({
   args: { sessionToken: v.string(), vibeId: v.id("vibes"), pinned: v.boolean() },
   handler: async (ctx, { sessionToken, vibeId, pinned }) => {
-    const { traveller } = await requireAction(ctx, sessionToken, "moderateVibes");
+    const { traveller } = await requireAction(ctx, sessionToken, "pinVibes");
     const vibe = await ctx.db.get(vibeId);
     if (!vibe) return;
     await ctx.db.patch(vibeId, { pinned });

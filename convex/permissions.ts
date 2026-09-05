@@ -35,13 +35,14 @@ export const PERMISSIONS = {
   deleteOwnVibe: "contributor",
 
   // --- Admin (PIN required) ---
-  editAnyFlights: "admin",
   moveDestinationBars: "admin", // move / resize destination bars
   manageDestinations: "admin", // add, remove, reorder destinations
-  recolorDestinations: "admin",
-  moderateVibes: "admin", // pin or delete any vibe note
+  pinVibes: "admin", // pin/unpin any vibe note
 
   // --- Super Admin (PIN required) ---
+  editAnyFlights: "superAdmin", // edit someone else's flights
+  recolorDestinations: "superAdmin",
+  deleteAnyVibe: "superAdmin", // delete someone else's vibe note
   manageTravellers: "superAdmin", // add / remove travellers
   assignRoles: "superAdmin", // assign roles, set PINs
   changeTripSettings: "superAdmin", // core dates or buffer window

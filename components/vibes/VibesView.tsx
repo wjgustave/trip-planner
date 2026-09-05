@@ -125,7 +125,8 @@ function VibeCard({
   const setPinned = useMutation(api.vibesMutations.setPinned);
   const react = useMutation(api.vibesMutations.react);
 
-  const isAdmin = me.role !== "contributor";
+  const isAdmin = me.role !== "contributor"; // pin/unpin
+  const isSuperAdmin = me.role === "superAdmin"; // delete anyone's note
   const isMine = vibe.authorId === me._id;
   const reactions = vibe.reactions ?? [];
 
@@ -167,7 +168,7 @@ function VibeCard({
           />
         )}
         {!isAdmin && vibe.pinned && <IconButton icon={PinFull} size="xs" kind="tertiary" aria-label="Pinned" disabled />}
-        {(isMine || isAdmin) && (
+        {(isMine || isSuperAdmin) && (
           <IconButton
             icon={Delete}
             size="xs"

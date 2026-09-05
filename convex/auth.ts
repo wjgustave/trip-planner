@@ -13,17 +13,28 @@ function randomToken(): string {
     .join("");
 }
 
-/** Tap an avatar -> new session. Returns the token for the cookie. */
+/**
+ * Tap an avatar + enter your PIN -> new session. Returns the token for the
+ * cookie. The PIN is verified server-side against the stored hash; since the
+ * PIN was just proven, admin+ sessions start already elevated.
+ */
 export const createSession = mutation({
-  args: { travellerId: v.id("travellers") },
-  handler: async (ctx, { travellerId }) => {
+  args: { travellerId: v.id("travellers"), pin: v.string() },
+  handler: async (ctx, { travellerId, pin }) => {
     const traveller = await ctx.db.get(travellerId);
     if (!traveller) throw new Error("Traveller not found");
+    if (!traveller.pinHash) {
+      throw new Error("No PIN set for this traveller — ask the Super Admin");
+    }
+    const ok = await verifyPin(pin, traveller.pinHash);
+    if (!ok) throw new Error("Wrong PIN");
     const token = randomToken();
     await ctx.db.insert("sessions", {
       token,
       travellerId,
       createdAt: Date.now(),
+      elevatedUntil:
+        traveller.role === "contributor" ? undefined : Date.now() + ELEVATION_MS,
     });
     return token;
   },

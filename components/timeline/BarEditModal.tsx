@@ -55,6 +55,8 @@ export default function BarEditModal({ destination, onClose }: BarEditModalProps
   if (!destination) return null;
 
   const canEdit = traveller != null && traveller.role !== "contributor" && sessionToken;
+  // Recolouring is Super Admin only; date moves are Admin+.
+  const canRecolor = traveller?.role === "superAdmin";
   const dirty =
     start !== destination.startDate || end !== destination.endDate || color !== destination.colorToken;
 
@@ -96,6 +98,7 @@ export default function BarEditModal({ destination, onClose }: BarEditModalProps
                   <TextField title="From" type="date" size="small" value={start} onChange={setStart} />
                   <TextField title="To" type="date" size="small" value={end} onChange={setEnd} />
                 </div>
+                {canRecolor && (
                 <div className="flex flex-col gap-1">
                   <Text type="text3" color="secondary">
                     Colour (Vibe palette)
@@ -122,6 +125,7 @@ export default function BarEditModal({ destination, onClose }: BarEditModalProps
                     ))}
                   </div>
                 </div>
+                )}
               </>
             ) : (
               <Text type="text2" color="secondary">
