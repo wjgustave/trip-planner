@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as lib_pin from "../lib/pin.js";
 import type * as lib_presence from "../lib/presence.js";
 import type * as seed from "../seed.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   "lib/pin": typeof lib_pin;
   "lib/presence": typeof lib_presence;
   seed: typeof seed;
