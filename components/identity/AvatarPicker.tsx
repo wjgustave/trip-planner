@@ -48,9 +48,15 @@ export default function AvatarPicker() {
   return (
     <main className="flex flex-col items-center justify-center flex-1 gap-8 p-8 min-h-screen">
       <div className="flex flex-col items-center gap-2 text-center">
-        <Text type="text1" weight="bold" color="secondary">
+        <span
+          style={{
+            font: "var(--font-h2)",
+            fontWeight: 700,
+            color: "var(--disabled-text-color)",
+          }}
+        >
           Demones Planner
-        </Text>
+        </span>
         <Heading type="h1">Thailand 2027</Heading>
         <Text type="text1" color="secondary">
           9 April – 2 May 2027 · Who are you?
