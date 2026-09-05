@@ -180,3 +180,14 @@ export const migrateRoster = internalMutation(async (ctx) => {
   }
   return done.length ? done.join(", ") : "Nothing to migrate.";
 });
+
+/**
+ * Wipe the activity log (the feed of who-changed-what).
+ *
+ * Run with: npx convex run seed:clearActivity [--prod]
+ */
+export const clearActivity = internalMutation(async (ctx) => {
+  const entries = await ctx.db.query("activity").collect();
+  for (const entry of entries) await ctx.db.delete(entry._id);
+  return `Cleared ${entries.length} activity entries.`;
+});
