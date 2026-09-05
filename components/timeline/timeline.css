@@ -52,6 +52,17 @@
   transform: translateY(-1px);
 }
 
+/* Resize handles at each bar end (Admin+). */
+.timeline-bar-handle {
+  width: var(--space-8);
+  cursor: ew-resize;
+  border-radius: var(--border-radius-small);
+}
+
+.timeline-bar-handle:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 /* Keep avatar rings visible against the bar colour. */
 .timeline-bar-avatars {
   --avatar-border-color: var(--fixed-light-color);

@@ -13,7 +13,10 @@ import type * as destinations from "../destinations.js";
 import type * as lib_pin from "../lib/pin.js";
 import type * as lib_presence from "../lib/presence.js";
 import type * as permissions from "../permissions.js";
+import type * as presenceMutations from "../presenceMutations.js";
 import type * as seed from "../seed.js";
+import type * as travelSegments from "../travelSegments.js";
+import type * as travellers from "../travellers.js";
 import type * as trip from "../trip.js";
 
 import type {
@@ -28,7 +31,10 @@ declare const fullApi: ApiFromModules<{
   "lib/pin": typeof lib_pin;
   "lib/presence": typeof lib_presence;
   permissions: typeof permissions;
+  presenceMutations: typeof presenceMutations;
   seed: typeof seed;
+  travelSegments: typeof travelSegments;
+  travellers: typeof travellers;
   trip: typeof trip;
 }>;
 
