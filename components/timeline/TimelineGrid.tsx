@@ -18,16 +18,19 @@ import {
 } from "./timelineMath";
 import "./timeline.css";
 
+/** Fixed header heights so the left panel can align with the grid header. */
+export const MONTH_HEADER_HEIGHT = 26;
+export const DAY_HEADER_HEIGHT = 44;
+export const HEADER_HEIGHT = MONTH_HEADER_HEIGHT + DAY_HEADER_HEIGHT;
+
 interface TimelineGridProps {
   range: TimelineRange;
   zoom: ZoomLevel;
   /** Bar rows rendered inside the grid body (steps 4+). */
   children?: ReactNode;
-  /** Number of body rows children occupy, to size the day-column backgrounds. */
-  bodyRows?: number;
 }
 
-export default function TimelineGrid({ range, zoom, children, bodyRows = 0 }: TimelineGridProps) {
+export default function TimelineGrid({ range, zoom, children }: TimelineGridProps) {
   const dayWidth = DAY_WIDTH[zoom];
   const columns: CSSProperties = {
     gridTemplateColumns: `repeat(${range.totalDays}, ${dayWidth}px)`,
@@ -42,12 +45,16 @@ export default function TimelineGrid({ range, zoom, children, bodyRows = 0 }: Ti
       {/* --- Header: months row --- */}
       <div
         className="grid sticky top-0 z-4"
-        style={{ ...columns, background: "var(--primary-background-color)" }}
+        style={{
+          ...columns,
+          height: MONTH_HEADER_HEIGHT,
+          background: "var(--primary-background-color)",
+        }}
       >
         {monthSpans(range).map((m) => (
           <div
             key={m.key}
-            className="timeline-day-col py-1 px-2 sticky left-0"
+            className="timeline-day-col py-1 px-2"
             style={{
               gridColumn: `${m.gridStart} / ${m.gridEnd}`,
               borderBottom: "var(--border-width) var(--border-style) var(--layout-border-color)",
@@ -65,7 +72,8 @@ export default function TimelineGrid({ range, zoom, children, bodyRows = 0 }: Ti
         className="grid sticky z-4"
         style={{
           ...columns,
-          top: "26px",
+          top: `${MONTH_HEADER_HEIGHT}px`,
+          height: DAY_HEADER_HEIGHT,
           background: "var(--primary-background-color)",
           borderBottom: "var(--border-width) var(--border-style) var(--layout-border-color)",
         }}
@@ -99,7 +107,7 @@ export default function TimelineGrid({ range, zoom, children, bodyRows = 0 }: Ti
         </div>
 
         {/* Bar rows render above the background columns. */}
-        <div className="relative z-1" style={{ minHeight: bodyRows === 0 ? "320px" : undefined }}>
+        <div className="relative z-1" style={{ minHeight: children ? undefined : "320px" }}>
           {children}
         </div>
 

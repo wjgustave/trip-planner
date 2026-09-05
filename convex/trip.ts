@@ -26,6 +26,14 @@ export const listTravelSegments = query(async (ctx) => {
   return await ctx.db.query("travelSegments").collect();
 });
 
+/** All vibe notes (pinned first, newest first within that). */
+export const listVibes = query(async (ctx) => {
+  const vibes = await ctx.db.query("vibes").collect();
+  return vibes.sort((a, b) =>
+    a.pinned === b.pinned ? b.createdAt - a.createdAt : a.pinned ? -1 : 1
+  );
+});
+
 /** Presence (derived + overrides) for every traveller x destination. */
 export const listPresence = query(async (ctx) => {
   const [settings, travellers, destinations, segments, overrides] = await Promise.all([
