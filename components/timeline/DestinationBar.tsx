@@ -195,6 +195,7 @@ export default function DestinationBar({
         onPointerDown={beginDrag("move")}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onClick={!editable ? onClick : undefined}
         data-destination-id={destination._id}
       >
         {showLabel && (

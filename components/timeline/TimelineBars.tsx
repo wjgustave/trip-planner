@@ -25,6 +25,10 @@ interface TimelineBarsProps {
   zoom: ZoomLevel;
   /** Departure-window start (the fading tail) — from the transit window bar. */
   departureWindowStart?: string;
+  /** Share mode: no interactions at all. */
+  readOnly?: boolean;
+  /** False on mobile — tap-to-edit replaces drag. */
+  dragEnabled?: boolean;
   onBarClick?: (destinationId: string) => void;
 }
 
@@ -33,11 +37,13 @@ export default function TimelineBars({
   range,
   zoom,
   departureWindowStart,
+  readOnly = false,
+  dragEnabled = true,
   onBarClick,
 }: TimelineBarsProps) {
   const { traveller, sessionToken } = useIdentity();
   const { ensureElevated } = useElevation();
-  const canEdit = traveller != null && traveller.role !== "contributor";
+  const canEdit = !readOnly && traveller != null && traveller.role !== "contributor";
 
   const updateDates = useMutation(api.destinations.updateDates).withOptimisticUpdate(
     (localStore, args) => {
@@ -101,7 +107,7 @@ export default function TimelineBars({
             range={range}
             zoom={zoom}
             row={i + 1}
-            editable={canEdit && zoom === "day"}
+            editable={canEdit && dragEnabled && zoom === "day"}
             onCommitDates={(startDate, endDate) =>
               void commitDates(row.destination._id, startDate, endDate)
             }

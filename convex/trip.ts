@@ -26,6 +26,17 @@ export const listTravelSegments = query(async (ctx) => {
   return await ctx.db.query("travelSegments").collect();
 });
 
+/** Recent activity, newest first, with actor names resolved. */
+export const listActivity = query(async (ctx) => {
+  const entries = await ctx.db.query("activity").withIndex("by_at").order("desc").take(100);
+  const travellers = await ctx.db.query("travellers").collect();
+  const nameById = new Map(travellers.map((t) => [t._id, t.name]));
+  return entries.map((e) => ({
+    ...e,
+    actorName: nameById.get(e.actorId) ?? "Someone",
+  }));
+});
+
 /** All vibe notes (pinned first, newest first within that). */
 export const listVibes = query(async (ctx) => {
   const vibes = await ctx.db.query("vibes").collect();
