@@ -18,6 +18,7 @@ import type * as seed from "../seed.js";
 import type * as travelSegments from "../travelSegments.js";
 import type * as travellers from "../travellers.js";
 import type * as trip from "../trip.js";
+import type * as vibesMutations from "../vibesMutations.js";
 
 import type {
   ApiFromModules,
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   travelSegments: typeof travelSegments;
   travellers: typeof travellers;
   trip: typeof trip;
+  vibesMutations: typeof vibesMutations;
 }>;
 
 /**
