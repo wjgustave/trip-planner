@@ -79,6 +79,11 @@ export function gridColumnForSpan(
   };
 }
 
+/** Inclusive width of a date span in days (start..end both counted). */
+export function daysWide(startDate: PlainDate, endDate: PlainDate): number {
+  return daysBetween(startDate, endDate) + 1;
+}
+
 /** True when the day is in the leading or trailing buffer. */
 export function isBufferDay(range: TimelineRange, d: PlainDate): boolean {
   return d < range.tripStart || d > range.tripEnd;

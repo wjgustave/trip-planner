@@ -41,6 +41,22 @@
   color: var(--disabled-text-color);
 }
 
+/* Destination bars: subtle lift shadow on hover. */
+.timeline-bar {
+  transition: box-shadow var(--motion-productive-medium) var(--motion-timing-transition),
+    transform var(--motion-productive-medium) var(--motion-timing-transition);
+}
+
+.timeline-bar:hover {
+  box-shadow: var(--box-shadow-small);
+  transform: translateY(-1px);
+}
+
+/* Keep avatar rings visible against the bar colour. */
+.timeline-bar-avatars {
+  --avatar-border-color: var(--fixed-light-color);
+}
+
 /* Vertical "today" line. */
 .timeline-today-line {
   position: absolute;

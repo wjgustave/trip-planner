@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { derivePresence } from "./lib/presence";
 
 /** Singleton trip settings (core dates + buffer size). */
 export const getSettings = query(async (ctx) => {
@@ -23,4 +24,17 @@ export const listTravellers = query(async (ctx) => {
 /** All travel segments, for the timeline and people views. */
 export const listTravelSegments = query(async (ctx) => {
   return await ctx.db.query("travelSegments").collect();
+});
+
+/** Presence (derived + overrides) for every traveller x destination. */
+export const listPresence = query(async (ctx) => {
+  const [settings, travellers, destinations, segments, overrides] = await Promise.all([
+    ctx.db.query("settings").first(),
+    ctx.db.query("travellers").collect(),
+    ctx.db.query("destinations").collect(),
+    ctx.db.query("travelSegments").collect(),
+    ctx.db.query("presence").collect(),
+  ]);
+  if (!settings) return [];
+  return derivePresence(travellers, destinations, segments, overrides, settings);
 });

@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { Button, ButtonGroup, Loader } from "@vibe/core";
 import { api } from "@/convex/_generated/api";
 import TimelineGrid from "./TimelineGrid";
+import TimelineBars from "./TimelineBars";
 import { ZoomLevel, buildRange } from "./timelineMath";
 
 export default function TimelineView() {
@@ -45,7 +46,9 @@ export default function TimelineView() {
           borderTop: "var(--border-width) var(--border-style) var(--layout-border-color)",
         }}
       >
-        <TimelineGrid range={range} zoom={zoom} />
+        <TimelineGrid range={range} zoom={zoom}>
+          <TimelineBars range={range} zoom={zoom} />
+        </TimelineGrid>
       </div>
     </section>
   );

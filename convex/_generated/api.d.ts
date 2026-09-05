@@ -9,6 +9,7 @@
  */
 
 import type * as lib_pin from "../lib/pin.js";
+import type * as lib_presence from "../lib/presence.js";
 import type * as seed from "../seed.js";
 import type * as trip from "../trip.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "lib/pin": typeof lib_pin;
+  "lib/presence": typeof lib_presence;
   seed: typeof seed;
   trip: typeof trip;
 }>;
