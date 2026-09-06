@@ -1,24 +1,29 @@
 "use client";
 
-// Landing screen: a tight square mosaic of illustrated portraits. Tiles are
-// greyscale until hovered (colour fills bottom-up) and ripple from the
-// pointer when selected; picking a tile opens the 4-digit PIN card.
-import { MouseEvent, useState } from "react";
+// Landing screen: a tight mosaic of illustrated portraits — a 3x2 rectangle
+// on desktop, a square on mobile (see avatar-grid.css). Tiles are greyscale
+// until hovered (colour fills bottom-up) and ripple from the pointer when
+// selected; picking a tile opens the 4-digit PIN card.
+import { CSSProperties, MouseEvent, useState } from "react";
 import { useQuery } from "convex/react";
 import { Avatar, Button, Heading, Loader, Text, TextField } from "@vibe/core";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { vibeColorVar } from "@/lib/colors";
 import { useIdentity } from "./IdentityProvider";
 import "./avatar-grid.css";
 
-// 4x4 grid, 16 cells exactly: three 2x2 quadrants + two 2x1 tiles stacked
-// in the bottom-right quadrant. grid-area: rowStart / colStart / rowEnd / colEnd.
+// Six tiles of deliberately different shapes packed into a 3-col x 4-row
+// grid with unequal tracks (see avatar-grid.css), so no two tiles match:
+// big square, small portrait, tall narrow, tall, small square, wide strip.
+// grid-area: rowStart / colStart / rowEnd / colEnd.
 const TILES: Record<string, { src: string; area: string }> = {
   wayne: { src: "/avatars/wayne.png", area: "1 / 1 / 3 / 3" },
-  abdi: { src: "/avatars/abdi.png", area: "1 / 3 / 3 / 5" },
-  john: { src: "/avatars/john.png", area: "3 / 1 / 5 / 3" },
-  emmanuel: { src: "/avatars/emmanuel.png", area: "3 / 3 / 4 / 5" },
-  ali: { src: "/avatars/ali.png", area: "4 / 3 / 5 / 5" },
+  abdi: { src: "/avatars/abdi.png", area: "1 / 3 / 2 / 4" },
+  john: { src: "/avatars/john.png", area: "2 / 3 / 4 / 4" },
+  emmanuel: { src: "/avatars/emmanuel.png", area: "3 / 1 / 5 / 2" },
+  ali: { src: "/avatars/ali.png", area: "3 / 2 / 4 / 3" },
+  ameen: { src: "/avatars/ameen.png", area: "4 / 2 / 5 / 4" },
 };
 
 interface Ripple {
@@ -118,7 +123,14 @@ export default function AvatarPicker() {
             <button
               key={t._id}
               className={`avatar-tile${isSelected ? " selected" : ""}`}
-              style={{ gridArea: tile.area }}
+              // Tile shape from the mosaic map; hover/selected accent is
+              // that traveller's colour.
+              style={
+                {
+                  gridArea: tile.area,
+                  "--tile-color": vibeColorVar(t.avatarColor),
+                } as CSSProperties
+              }
               disabled={busy}
               aria-label={`Continue as ${t.name}`}
               aria-pressed={isSelected}
